@@ -1,4 +1,9 @@
- import createEngine, {
+/**
+ * For link customizations @see AdvancedLinkModel
+ * The event positionChanged has been commented out to prevent logging clogging
+ */
+
+import createEngine, {
   DiagramModel,
   DefaultNodeModel,
   DefaultPortModel,
@@ -13,6 +18,16 @@ import {
 } from "@projectstorm/react-diagrams-core";
 import { MouseEvent } from "react";
 
+/**
+ * @param linkType -> The type of link (in/out), customize in/out links differently
+ * Customizations to be passed in the super call, options available -
+ * color: string
+ * curvyness: number -> Link will not curve if arrow widget is attached
+ * id: string
+ * selectedColor: color as string -> Unclear as to what this does
+ * type: string
+ * width: number
+ */
 export class AdvancedLinkModel extends DefaultLinkModel {
   constructor(linkType: string) {
     if (linkType === "in") {
@@ -149,11 +164,14 @@ export class AdvancedLinkFactory extends DefaultLinkFactory {
   }
 }
 
+// Object containing data to be sent over to api
 const data: { components: any; links: any } = {
   components: [],
   links: [],
 };
 
+
+// Currently called on render, node deletion, link creation (with valid target and source) and link deletion (with valid target and source).
 const sendRequest = async () => {
   await fetch("http://localhost:3000/api/state/cache", {
     method: "POST",
@@ -165,6 +183,12 @@ const sendRequest = async () => {
   });
 };
 
+/**
+ * This registers listeners on the diagram model (canvas)
+ * and takes care of adding/removing listeners to children links and nodes
+ * @param model The model to add listener to
+ * @todo Refactor this into smaller pieces
+ */
 export const addModelListener = (model: DiagramModel<DiagramModelGenerics>) => {
   const listener = model.registerListener({
     selectionChanged: (e: any) => {
@@ -285,7 +309,7 @@ export const addModelListener = (model: DiagramModel<DiagramModelGenerics>) => {
   return listener;
 };
 
-
+// Deregisters the listener
 export const removeModelListener = (
   model: DiagramModel<DiagramModelGenerics>,
   listener: any
@@ -296,6 +320,8 @@ export const removeModelListener = (
 export const engine = createEngine();
 export const model = new DiagramModel();
 
+
+// Method to initialize the engine and reset data
 export const initModel = () => {
   data.components = [];
   data.links = [];

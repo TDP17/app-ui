@@ -2,8 +2,6 @@ import { useLayoutEffect, useState } from "react";
 import BasicConnection from "./BasicConnection";
 import { addModelListener, initModel, model, removeModelListener } from "./utils/engine";
 
-import "./App.css";
-
 const App : React.FC = () => {
   const [loaded, setLoaded] = useState(false);
   useLayoutEffect(() => {
