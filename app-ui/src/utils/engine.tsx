@@ -1,4 +1,4 @@
-import createEngine, {
+ import createEngine, {
   DiagramModel,
   DefaultNodeModel,
   DefaultPortModel,
@@ -19,13 +19,13 @@ export class AdvancedLinkModel extends DefaultLinkModel {
       super({
         type: "advanced",
         width: 2,
-        color: "white",
+        color: "rgb(255,192,255)",
       });
     } else if (linkType === "out") {
       super({
         type: "advanced",
         width: 2,
-        color: "gray",
+        color: "white",
       });
     } else
       super({
@@ -149,6 +149,22 @@ export class AdvancedLinkFactory extends DefaultLinkFactory {
   }
 }
 
+const data: { components: any; links: any } = {
+  components: [],
+  links: [],
+};
+
+const sendRequest = async () => {
+  await fetch("http://localhost:3000/api/state/cache", {
+    method: "POST",
+    mode: "cors",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+};
+
 export const addModelListener = (model: DiagramModel<DiagramModelGenerics>) => {
   const listener = model.registerListener({
     selectionChanged: (e: any) => {
@@ -176,12 +192,37 @@ export const addModelListener = (model: DiagramModel<DiagramModelGenerics>) => {
     linksUpdated: (e: any & { link: any; isCreated: any }) => {
       if (e.isCreated) {
         console.log("Link Created", e.link);
+
+        if (e.link.sourcePort && e.link.targetPort) {
+          data.links.push({
+            id: e.link.options.id,
+            src: e.link.sourcePort.parent.options.id,
+            dest: e.link.targetPort.parent.options.id,
+          });
+        }
+
         e.link.registerListener({
           sourcePortChanged: (e: any) => {
             console.log("Source Port Changed", e);
+            if (e.entity.sourcePort && e.entity.targetPort) {
+              data.links.push({
+                id: e.link.options.id,
+                src: e.entity.sourcePort.parent.options.id,
+                dest: e.entity.targetPort.parent.options.id,
+              });
+              sendRequest();
+            }
           },
           targetPortChanged: (e: any) => {
             console.log("Target Port Changed", e);
+            if (e.entity.sourcePort && e.entity.targetPort) {
+              data.links.push({
+                id: e.entity.options.id,
+                src: e.entity.sourcePort.parent.options.id,
+                dest: e.entity.targetPort.parent.options.id,
+              });
+              sendRequest();
+            }
           },
           selectionChanged: (e: any) => {
             if (e.isSelected)
@@ -191,7 +232,13 @@ export const addModelListener = (model: DiagramModel<DiagramModelGenerics>) => {
             else console.log("Selection Changed (Link)", e.entity);
           },
           entityRemoved: (e: any) => {
-            console.log("Entity Removed (Link)", e.entity);
+            console.log("Entity Removed (Link)", e);
+            const newLinks = data.links.filter(
+              (link: { id: string; src: string; dest: string }) =>
+                link.id !== e.entity.options.id
+            );
+            data.links = newLinks;
+            sendRequest();
           },
         });
       } else if (!e.isCreated) {
@@ -203,6 +250,12 @@ export const addModelListener = (model: DiagramModel<DiagramModelGenerics>) => {
     nodesUpdated: (e: any & { node: any; isCreated: any }) => {
       if (e.isCreated) {
         console.log("Node Created", e.node);
+
+        data.components.push({
+          id: e.node.options.id,
+          name: e.node.options.name,
+        });
+
         e.node.registerListener({
           selectionChanged: (e: any) => {
             if (e.isSelected)
@@ -213,6 +266,12 @@ export const addModelListener = (model: DiagramModel<DiagramModelGenerics>) => {
           },
           entityRemoved: (e: any) => {
             console.log("Entity Removed (Node)", e.entity);
+            const newData = data.components.filter(
+              (component: { id: string; name: string }) =>
+                component.id !== e.entity.options.id
+            );
+            data.components = newData;
+            sendRequest();
           },
           // positionChanged: (e: any) => {
           //   console.log("Position changed", e);
@@ -226,6 +285,7 @@ export const addModelListener = (model: DiagramModel<DiagramModelGenerics>) => {
   return listener;
 };
 
+
 export const removeModelListener = (
   model: DiagramModel<DiagramModelGenerics>,
   listener: any
@@ -237,18 +297,26 @@ export const engine = createEngine();
 export const model = new DiagramModel();
 
 export const initModel = () => {
+  data.components = [];
+  data.links = [];
   engine.getLinkFactories().registerFactory(new AdvancedLinkFactory());
 
-  const node1 = new DefaultNodeModel("Destination", "rgb(0,192,255)");
-  const port1 = node1.addPort(new AdvancedPortModel(false, "in"));
+  const node1 = new DefaultNodeModel("Destination", "rgb(255,192,0)");
+  const port1 = node1.addPort(new AdvancedPortModel(false, "out", "out"));
   node1.setPosition(100, 100);
 
-  const node2 = new DefaultNodeModel("Source", "rgb(192,255,0)");
-  const port2 = node2.addPort(new AdvancedPortModel(true, "out"));
-  node2.setPosition(500, 350);
+  const node2 = new DefaultNodeModel("Source", "rgb(255,192,255)");
+  const port2 = node2.addPort(new AdvancedPortModel(true, "in", "in"));
+  node2.setPosition(500, 100);
 
-  model.addAll(port1.link(port2));
-  model.addAll(node1, node2);
+  const node3 = new DefaultNodeModel("Another Source", "rgb(255,192,255)");
+  const port3 = node3.addPort(new AdvancedPortModel(true, "in", "in"));
+  node3.setPosition(500, 500);
+
+  model.addAll(port2.link(port1), port3.link(port2));
+  model.addAll(node1, node2, node3);
+  // model.addAll(node1, node2);
+  sendRequest(); // Send initial request
 
   engine.setModel(model);
 };
