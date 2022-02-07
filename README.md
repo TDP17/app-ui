@@ -5,7 +5,7 @@
 The server is set to run on port 3000 and client is set to run on 3001 (change client port to anything valid other than 3000 by going to local [package.json](https://github.com/TDP17/app-ui/blob/master/app-ui/package.json#L25) and editing value of set PORT=3001)<br />
 
 ### To start the app 
-Navigate to the inner app-ui folder via `cd app-ui` and install dependencies via `npm install`
+Navigate to the inner app-ui folder via `cd app-ui` and install dependencies via `npm install`<br />
 `npm start` `npm run start` Runs the server and client<br />
 `npm run devStart` Runs server with nodemon and client (need to install dev dependencies via npm install --production=false)<br />
 
